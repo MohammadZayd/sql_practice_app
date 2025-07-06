@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Terminal, Database, Play, RotateCcw } from 'lucide-react';
+import { Terminal, Database, RotateCcw } from 'lucide-react';
 
 const SQLPracticeTerminal = () => {
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
@@ -11,6 +11,260 @@ const SQLPracticeTerminal = () => {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const inputRef = useRef(null);
   const terminalRef = useRef(null);
+
+  // Inline styles
+  const styles = {
+    landingContainer: {
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1e293b 0%, #1e3a8a 50%, #1e293b 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    },
+    landingContent: {
+      textAlign: 'center',
+      color: 'white',
+      maxWidth: '800px'
+    },
+    landingIcon: {
+      width: '96px',
+      height: '96px',
+      margin: '0 auto 2rem',
+      color: '#60a5fa',
+      animation: 'bounce 2s infinite'
+    },
+    landingTitle: {
+      fontSize: '2.5rem',
+      fontWeight: 'bold',
+      marginBottom: '1rem',
+      color: 'white'
+    },
+    landingSubtitle: {
+      fontSize: '1.25rem',
+      color: '#cbd5e1',
+      marginBottom: '2rem',
+      lineHeight: '1.6'
+    },
+    landingButton: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '1rem 2rem',
+      background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '0.5rem',
+      fontSize: '1.1rem',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      marginBottom: '1rem'
+    },
+    landingHints: {
+      marginTop: '2rem',
+      fontSize: '0.875rem',
+      color: '#94a3b8'
+    },
+    landingHint: {
+      margin: '0.5rem 0'
+    },
+    codeHint: {
+      backgroundColor: '#374151',
+      padding: '0.25rem 0.5rem',
+      borderRadius: '0.25rem',
+      fontFamily: 'monospace'
+    },
+    terminalContainer: {
+      minHeight: '100vh',
+      backgroundColor: '#0f172a',
+      color: 'white',
+      padding: '1rem',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      overflowX: 'hidden'
+    },
+    terminalContent: {
+      maxWidth: '1200px',
+      margin: '0 auto'
+    },
+    terminalHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: '1rem',
+      flexWrap: 'wrap',
+      gap: '1rem'
+    },
+    terminalHeaderLeft: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1rem',
+      flexWrap: 'wrap'
+    },
+    terminalTitle: {
+      fontSize: '1.5rem',
+      fontWeight: 'bold',
+      color: 'white'
+    },
+    dbBadge: {
+      backgroundColor: '#2563eb',
+      color: 'white',
+      padding: '0.25rem 0.75rem',
+      borderRadius: '1rem',
+      fontSize: '0.875rem'
+    },
+    terminalHeaderRight: {
+      display: 'flex',
+      gap: '0.5rem'
+    },
+    button: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.5rem 1rem',
+      border: 'none',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      fontSize: '0.875rem',
+      fontWeight: '500',
+      transition: 'background-color 0.2s ease'
+    },
+    resetButton: {
+      backgroundColor: '#ea580c',
+      color: 'white'
+    },
+    exitButton: {
+      backgroundColor: '#475569',
+      color: 'white'
+    },
+    terminal: {
+      backgroundColor: '#000000',
+      borderRadius: '0.5rem',
+      padding: '1rem',
+      fontFamily: 'monospace',
+      fontSize: '0.875rem',
+      height: '400px',
+      overflowY: 'auto',
+      overflowX: 'hidden'
+    },
+    terminalEntry: {
+      marginBottom: '0.5rem'
+    },
+    inputLine: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '0.5rem'
+    },
+    prompt: {
+      color: '#60a5fa',
+      flexShrink: 0
+    },
+    inputText: {
+      color: 'white',
+      wordBreak: 'break-words',
+      flex: 1
+    },
+    output: {
+      marginLeft: '1rem',
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-words'
+    },
+    outputSuccess: {
+      color: '#22c55e'
+    },
+    outputError: {
+      color: '#ef4444'
+    },
+    terminalInput: {
+      backgroundColor: 'transparent',
+      border: 'none',
+      outline: 'none',
+      color: 'white',
+      fontSize: '0.875rem',
+      fontFamily: 'monospace',
+      width: '100%',
+      minWidth: 0
+    },
+    infoCards: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+      gap: '1rem',
+      marginTop: '1rem'
+    },
+    infoCard: {
+      backgroundColor: '#1e293b',
+      borderRadius: '0.5rem',
+      padding: '1rem'
+    },
+    cardTitle: {
+      fontSize: '1.125rem',
+      fontWeight: '600',
+      color: '#60a5fa',
+      marginBottom: '0.5rem'
+    },
+    cardContent: {
+      fontSize: '0.875rem'
+    },
+    codeExample: {
+      color: '#22c55e',
+      fontFamily: 'monospace',
+      display: 'block',
+      margin: '0.25rem 0',
+      wordBreak: 'break-all'
+    },
+    welcomeText: {
+      color: '#22c55e',
+      marginBottom: '1rem'
+    }
+  };
+
+  // Add CSS animations
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes bounce {
+        0%, 20%, 53%, 80%, 100% {
+          transform: translateY(0);
+        }
+        40%, 43% {
+          transform: translateY(-30px);
+        }
+        70% {
+          transform: translateY(-15px);
+        }
+        90% {
+          transform: translateY(-4px);
+        }
+      }
+      
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      
+      @media (max-width: 768px) {
+        .terminal-header {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        
+        .terminal {
+          height: 300px;
+        }
+        
+        .landing-title {
+          font-size: 2rem;
+        }
+        
+        .landing-subtitle {
+          font-size: 1rem;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
 
   useEffect(() => {
     if (isTerminalOpen && inputRef.current) {
@@ -279,34 +533,34 @@ Example:
 
   if (!isTerminalOpen) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
-        <div className="text-center space-y-8">
-          <div className="relative">
-            <div className="absolute inset-0 bg-blue-500 rounded-full blur-xl opacity-20 animate-pulse"></div>
-            <Database className="relative w-24 h-24 mx-auto text-blue-400 animate-bounce" />
+      <div style={styles.landingContainer}>
+        <div style={styles.landingContent}>
+          <div style={styles.landingIcon}>
+            <Database size={96} />
           </div>
           
-          <div className="space-y-4">
-            <h1 className="text-4xl font-bold text-white">SQL Practice Terminal</h1>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-              Learn SQL by practicing with a real terminal interface. Create databases, tables, 
-              insert data, and run queries in a safe sandbox environment.
-            </p>
-          </div>
+          <h1 style={styles.landingTitle}>SQL Practice Terminal</h1>
+          <p style={styles.landingSubtitle}>
+            Learn SQL by practicing with a real terminal interface. Create databases, tables, 
+            insert data, and run queries in a safe sandbox environment.
+          </p>
           
-          <div className="space-y-4">
-            <button
-              onClick={() => setIsTerminalOpen(true)}
-              className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-            >
-              <Terminal className="w-6 h-6 inline mr-2" />
-              Open SQL Terminal
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-            </button>
-            
-            <div className="text-sm text-slate-400 space-y-2">
-              <p>✨ Start with: <code className="bg-slate-700 px-2 py-1 rounded">CREATE DATABASE mystore;</code></p>
-              <p>📚 Type <code className="bg-slate-700 px-2 py-1 rounded">HELP</code> for all available commands</p>
+          <button
+            onClick={() => setIsTerminalOpen(true)}
+            style={styles.landingButton}
+            onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+          >
+            <Terminal size={24} />
+            Open SQL Terminal
+          </button>
+          
+          <div style={styles.landingHints}>
+            <div style={styles.landingHint}>
+              ✨ Start with: <span style={styles.codeHint}>CREATE DATABASE mystore;</span>
+            </div>
+            <div style={styles.landingHint}>
+              📚 Type <span style={styles.codeHint}>HELP</span> for all available commands
             </div>
           </div>
         </div>
@@ -315,38 +569,42 @@ Example:
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-2 sm:p-4 overflow-x-hidden">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
-          <div className="flex items-center space-x-2 sm:space-x-4 flex-wrap">
-            <Terminal className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400" />
-            <h1 className="text-lg sm:text-2xl font-bold">SQL Practice Terminal</h1>
+    <div style={styles.terminalContainer}>
+      <div style={styles.terminalContent}>
+        <div style={{...styles.terminalHeader}} className="terminal-header">
+          <div style={styles.terminalHeaderLeft}>
+            <Terminal size={32} color="#60a5fa" />
+            <h1 style={styles.terminalTitle}>SQL Practice Terminal</h1>
             {currentDB && (
-              <span className="px-2 py-1 sm:px-3 sm:py-1 bg-blue-600 rounded-full text-xs sm:text-sm">
+              <span style={styles.dbBadge}>
                 DB: {currentDB}
               </span>
             )}
           </div>
-          <div className="flex space-x-2 w-full sm:w-auto">
+          <div style={styles.terminalHeaderRight}>
             <button
               onClick={resetTerminal}
-              className="flex items-center space-x-1 sm:space-x-2 px-2 py-2 sm:px-4 sm:py-2 bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors text-sm"
+              style={{...styles.button, ...styles.resetButton}}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
+              onMouseOut={(e) => e.target.style.backgroundColor = '#ea580c'}
             >
-              <RotateCcw className="w-4 h-4" />
-              <span className="hidden sm:inline">Reset</span>
+              <RotateCcw size={16} />
+              Reset
             </button>
             <button
               onClick={() => setIsTerminalOpen(false)}
-              className="px-2 py-2 sm:px-4 sm:py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-sm"
+              style={{...styles.button, ...styles.exitButton}}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#374151'}
+              onMouseOut={(e) => e.target.style.backgroundColor = '#475569'}
             >
               Exit Terminal
             </button>
           </div>
         </div>
 
-        <div className="bg-black rounded-lg p-2 sm:p-4 font-mono text-xs sm:text-sm h-64 sm:h-96 overflow-y-auto overflow-x-hidden" ref={terminalRef}>
+        <div style={styles.terminal} ref={terminalRef} className="terminal">
           {history.length === 0 && (
-            <div className="text-green-400 mb-4">
+            <div style={styles.welcomeText}>
               <p>SQL Practice Terminal v1.0</p>
               <p>Type 'HELP' for available commands</p>
               <p>Ready to execute SQL commands...</p>
@@ -355,24 +613,27 @@ Example:
           )}
           
           {history.map((entry, index) => (
-            <div key={index} className="mb-2">
+            <div key={index} style={styles.terminalEntry}>
               {entry.type === 'input' ? (
-                <div className="flex items-start">
-                  <span className="text-blue-400 mr-1 sm:mr-2 flex-shrink-0">
+                <div style={styles.inputLine}>
+                  <span style={styles.prompt}>
                     sql{entry.database ? `(${entry.database})` : ''}{'>'} 
                   </span>
-                  <span className="text-white break-words min-w-0 flex-1">{entry.content}</span>
+                  <span style={styles.inputText}>{entry.content}</span>
                 </div>
               ) : (
-                <div className={`ml-2 sm:ml-4 whitespace-pre-wrap break-words ${entry.error ? 'text-red-400' : 'text-green-400'}`}>
+                <div style={{
+                  ...styles.output,
+                  ...(entry.error ? styles.outputError : styles.outputSuccess)
+                }}>
                   {entry.content}
                 </div>
               )}
             </div>
           ))}
           
-          <div className="flex items-center">
-            <span className="text-blue-400 mr-1 sm:mr-2 flex-shrink-0">
+          <div style={styles.inputLine}>
+            <span style={styles.prompt}>
               sql{currentDB ? `(${currentDB})` : ''}{'>'} 
             </span>
             <input
@@ -381,31 +642,21 @@ Example:
               value={currentInput}
               onChange={(e) => setCurrentInput(e.target.value)}
               onKeyDown={handleKeyPress}
-              className="flex-1 bg-transparent text-white outline-none min-w-0"
+              style={styles.terminalInput}
               placeholder="Enter SQL command..."
             />
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-slate-800 rounded-lg p-3 sm:p-4 overflow-hidden">
-            <h3 className="text-base sm:text-lg font-semibold text-blue-400 mb-2">Quick Commands</h3>
-            <div className="space-y-1 text-xs sm:text-sm overflow-x-auto">
-              <div><code className="text-green-400 break-all">CREATE DATABASE mystore;</code></div>
-              <div><code className="text-green-400 break-all">USE mystore;</code></div>
-              <div><code className="text-green-400 break-all">CREATE TABLE products (id INT, name VARCHAR(50));</code></div>
-              <div><code className="text-green-400 break-all">INSERT INTO products VALUES (1, 'Laptop');</code></div>
-              <div><code className="text-green-400 break-all">SELECT * FROM products;</code></div>
-            </div>
-          </div>
+        <div style={styles.infoCards}>
           
-          <div className="bg-slate-800 rounded-lg p-3 sm:p-4">
-            <h3 className="text-base sm:text-lg font-semibold text-blue-400 mb-2">Current State</h3>
-            <div className="text-xs sm:text-sm space-y-1">
+          <div style={styles.infoCard}>
+            <h3 style={styles.cardTitle}>Current State</h3>
+            <div style={styles.cardContent}>
               <div>Databases: {Object.keys(databases).length}</div>
               <div>Current DB: {currentDB || 'None'}</div>
               <div>Tables: {currentDB ? Object.keys(databases[currentDB]?.tables || {}).length : 0}</div>
-              <div className="text-slate-400 text-xs mt-2">
+              <div style={{color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.5rem'}}>
                 Use arrow keys to navigate command history
               </div>
             </div>
