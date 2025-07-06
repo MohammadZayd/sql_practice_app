@@ -444,31 +444,7 @@ const SQLPracticeTerminal = () => {
       return { output: `Database '${dbName}' dropped successfully`, error: false };
     }
 
-    // HELP
-    if (cmd === 'help' || cmd === 'help;') {
-      return { 
-        output: `Available SQL Commands:
-  CREATE DATABASE database_name;
-  USE database_name;
-  SHOW DATABASES;
-  CREATE TABLE table_name (column1 datatype, column2 datatype, ...);
-  SHOW TABLES;
-  INSERT INTO table_name (columns) VALUES (values);
-  SELECT * FROM table_name;
-  DROP TABLE table_name;
-  DROP DATABASE database_name;
-  HELP;
-  CLEAR;
-  
-Example:
-  CREATE DATABASE mystore;
-  USE mystore;
-  CREATE TABLE products (id INT, name VARCHAR(50), price DECIMAL);
-  INSERT INTO products (id, name, price) VALUES (1, 'Laptop', 999.99);
-  SELECT * FROM products;`, 
-        error: false 
-      };
-    }
+
 
     // CLEAR
     if (cmd === 'clear' || cmd === 'clear;') {
@@ -476,7 +452,7 @@ Example:
       return { output: '', error: false, clear: true };
     }
 
-    return { output: `Unknown command: ${originalCmd}. Type 'HELP' for available commands.`, error: true };
+    return { output: `Unknown command: ${originalCmd}. Check the Quick Commands panel for available commands.`, error: true };
   };
 
   const handleCommand = (command) => {
@@ -560,7 +536,7 @@ Example:
               ✨ Start with: <span style={styles.codeHint}>CREATE DATABASE mystore;</span>
             </div>
             <div style={styles.landingHint}>
-              📚 Type <span style={styles.codeHint}>HELP</span> for all available commands
+              📚 Check the Quick Commands panel for available commands
             </div>
           </div>
         </div>
@@ -606,7 +582,7 @@ Example:
           {history.length === 0 && (
             <div style={styles.welcomeText}>
               <p>SQL Practice Terminal v1.0</p>
-              <p>Type 'HELP' for available commands</p>
+              <p>Check the Quick Commands panel for available commands</p>
               <p>Ready to execute SQL commands...</p>
               <br />
             </div>
@@ -649,6 +625,16 @@ Example:
         </div>
 
         <div style={styles.infoCards}>
+          <div style={styles.infoCard}>
+            <h3 style={styles.cardTitle}>Quick Commands</h3>
+            <div style={styles.cardContent}>
+              <span style={styles.codeExample}>CREATE DATABASE mystore;</span>
+              <span style={styles.codeExample}>USE mystore;</span>
+              <span style={styles.codeExample}>CREATE TABLE products (id INT, name VARCHAR(50));</span>
+              <span style={styles.codeExample}>INSERT INTO products VALUES (1, 'Laptop');</span>
+              <span style={styles.codeExample}>SELECT * FROM products;</span>
+            </div>
+          </div>
           
           <div style={styles.infoCard}>
             <h3 style={styles.cardTitle}>Current State</h3>
