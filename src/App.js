@@ -535,9 +535,6 @@ const SQLPracticeTerminal = () => {
             <div style={styles.landingHint}>
               ✨ Start with: <span style={styles.codeHint}>CREATE DATABASE mystore;</span>
             </div>
-            <div style={styles.landingHint}>
-              📚 Check the Quick Commands panel for available commands
-            </div>
           </div>
         </div>
       </div>
@@ -582,7 +579,6 @@ const SQLPracticeTerminal = () => {
           {history.length === 0 && (
             <div style={styles.welcomeText}>
               <p>SQL Practice Terminal v1.0</p>
-              <p>Check the Quick Commands panel for available commands</p>
               <p>Ready to execute SQL commands...</p>
               <br />
             </div>
