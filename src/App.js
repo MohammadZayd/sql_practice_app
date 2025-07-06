@@ -278,28 +278,108 @@ const SQLPracticeTerminal = () => {
     }
   }, [history]);
 
+  const parseColumns = (columnString) => {
+    // Parse column definitions like "id INT PRIMARY KEY, name VARCHAR(100), age INT"
+    const columns = [];
+    const parts = columnString.split(',').map(part => part.trim());
+    
+    for (const part of parts) {
+      const tokens = part.split(/\s+/);
+      if (tokens.length >= 2) {
+        columns.push({
+          name: tokens[0],
+          type: tokens[1],
+          constraints: tokens.slice(2).join(' ')
+        });
+      }
+    }
+    
+    return columns;
+  };
+
+  const formatTableData = (table) => {
+    if (!table.columns || table.columns.length === 0) {
+      return 'No columns defined';
+    }
+    
+    const columnNames = table.columns.map(col => col.name);
+    let result = `┌${'─'.repeat(columnNames.join(' | ').length + 4)}┐\n`;
+    result += `│ ${columnNames.join(' | ')} │\n`;
+    result += `├${'─'.repeat(columnNames.join(' | ').length + 4)}┤\n`;
+    
+    if (table.rows.length === 0) {
+      result += `│ ${'(empty)'.padEnd(columnNames.join(' | ').length)} │\n`;
+    } else {
+      table.rows.forEach(row => {
+        const values = row.split(',').map(val => val.trim().replace(/^['"]|['"]$/g, ''));
+        result += `│ ${values.join(' | ')} │\n`;
+      });
+    }
+    
+    result += `└${'─'.repeat(columnNames.join(' | ').length + 4)}┘`;
+    return result;
+  };
+
   const executeSQL = (command) => {
     const cmd = command.trim().toLowerCase();
     const originalCmd = command.trim();
     
     if (!cmd) return { output: '', error: false };
 
+    // Handle multiple commands separated by semicolons
+    if (cmd.includes(';') && !cmd.endsWith(';')) {
+      const commands = originalCmd.split(';').filter(c => c.trim());
+      let results = [];
+      
+      for (const singleCmd of commands) {
+        const result = executeSQL(singleCmd.trim() + ';');
+        results.push(result);
+        if (result.error) break;
+      }
+      
+      return {
+        output: results.map(r => r.output).filter(o => o).join('\n'),
+        error: results.some(r => r.error)
+      };
+    }
+
+
+
     // CREATE DATABASE
     if (cmd.startsWith('create database ')) {
-      const dbName = cmd.split('create database ')[1].replace(';', '').trim();
+      const match = cmd.match(/create database\s+(\w+)/);
+      if (!match) {
+        return { output: 'Invalid CREATE DATABASE syntax. Use: CREATE DATABASE name;', error: true };
+      }
+      const dbName = match[1];
+      
       if (databases[dbName]) {
         return { output: `Database '${dbName}' already exists`, error: true };
       }
-      setDatabases(prev => ({ ...prev, [dbName]: { tables: {} } }));
+      
+      setDatabases(prev => ({ 
+        ...prev, 
+        [dbName]: { 
+          tables: {},
+          created: new Date().toISOString()
+        } 
+      }));
+      
       return { output: `Database '${dbName}' created successfully`, error: false };
     }
 
     // USE DATABASE
     if (cmd.startsWith('use ')) {
-      const dbName = cmd.split('use ')[1].replace(';', '').trim();
+      const match = cmd.match(/use\s+(\w+)/);
+      if (!match) {
+        return { output: 'Invalid USE syntax. Use: USE database_name;', error: true };
+      }
+      const dbName = match[1];
+      
       if (!databases[dbName]) {
         return { output: `Database '${dbName}' does not exist`, error: true };
       }
+      
       setCurrentDB(dbName);
       return { output: `Database changed to '${dbName}'`, error: false };
     }
@@ -310,7 +390,17 @@ const SQLPracticeTerminal = () => {
       if (dbList.length === 0) {
         return { output: 'No databases found', error: false };
       }
-      return { output: `Databases:\n${dbList.map(db => `  - ${db}`).join('\n')}`, error: false };
+      
+      let result = 'Databases:\n';
+      result += '┌─────────────────────┐\n';
+      result += '│ Database            │\n';
+      result += '├─────────────────────┤\n';
+      dbList.forEach(db => {
+        result += `│ ${db.padEnd(19)} │\n`;
+      });
+      result += '└─────────────────────┘';
+      
+      return { output: result, error: false };
     }
 
     // Commands that need a database selected
@@ -320,12 +410,18 @@ const SQLPracticeTerminal = () => {
 
     // CREATE TABLE
     if (cmd.startsWith('create table ')) {
-      const match = originalCmd.match(/create table (\w+)\s*\((.*)\)/i);
+      const match = originalCmd.match(/create table\s+(\w+)\s*\((.*?)\)/i);
       if (!match) {
         return { output: 'Invalid CREATE TABLE syntax. Use: CREATE TABLE table_name (column1 datatype, column2 datatype, ...);', error: true };
       }
+      
       const tableName = match[1];
-      const columns = match[2];
+      const columnString = match[2];
+      const columns = parseColumns(columnString);
+      
+      if (databases[currentDB].tables[tableName]) {
+        return { output: `Table '${tableName}' already exists`, error: true };
+      }
       
       setDatabases(prev => ({
         ...prev,
@@ -333,10 +429,15 @@ const SQLPracticeTerminal = () => {
           ...prev[currentDB],
           tables: {
             ...prev[currentDB].tables,
-            [tableName]: { columns: columns, rows: [] }
+            [tableName]: { 
+              columns: columns,
+              rows: [],
+              created: new Date().toISOString()
+            }
           }
         }
       }));
+      
       return { output: `Table '${tableName}' created successfully`, error: false };
     }
 
@@ -346,20 +447,70 @@ const SQLPracticeTerminal = () => {
       if (tables.length === 0) {
         return { output: 'No tables found in current database', error: false };
       }
-      return { output: `Tables in ${currentDB}:\n${tables.map(table => `  - ${table}`).join('\n')}`, error: false };
+      
+      let result = `Tables in ${currentDB}:\n`;
+      result += '┌─────────────────────┐\n';
+      result += '│ Table               │\n';
+      result += '├─────────────────────┤\n';
+      tables.forEach(table => {
+        result += `│ ${table.padEnd(19)} │\n`;
+      });
+      result += '└─────────────────────┘';
+      
+      return { output: result, error: false };
+    }
+
+    // DESCRIBE TABLE
+    if (cmd.startsWith('describe ') || cmd.startsWith('desc ')) {
+      const match = originalCmd.match(/desc(?:ribe)?\s+(\w+)/i);
+      if (!match) {
+        return { output: 'Invalid DESCRIBE syntax. Use: DESCRIBE table_name;', error: true };
+      }
+      
+      const tableName = match[1];
+      if (!databases[currentDB].tables[tableName]) {
+        return { output: `Table '${tableName}' does not exist`, error: true };
+      }
+      
+      const table = databases[currentDB].tables[tableName];
+      if (!table.columns || table.columns.length === 0) {
+        return { output: `Table '${tableName}' has no columns defined`, error: false };
+      }
+      
+      let result = `Table: ${tableName}\n`;
+      result += '┌─────────────────┬─────────────────┬─────────────────┐\n';
+      result += '│ Column          │ Type            │ Constraints     │\n';
+      result += '├─────────────────┼─────────────────┼─────────────────┤\n';
+      
+      table.columns.forEach(col => {
+        result += `│ ${col.name.padEnd(15)} │ ${col.type.padEnd(15)} │ ${(col.constraints || '').padEnd(15)} │\n`;
+      });
+      
+      result += '└─────────────────┴─────────────────┴─────────────────┘';
+      
+      return { output: result, error: false };
     }
 
     // INSERT INTO
     if (cmd.startsWith('insert into ')) {
-      const match = originalCmd.match(/insert into (\w+)\s*(?:\((.*?)\))?\s*values\s*\((.*?)\)/i);
+      const match = originalCmd.match(/insert into\s+(\w+)\s*(?:\((.*?)\))?\s*values\s*\((.*?)\)/i);
       if (!match) {
         return { output: 'Invalid INSERT syntax. Use: INSERT INTO table_name (columns) VALUES (values);', error: true };
       }
+      
       const tableName = match[1];
+      const specifiedColumns = match[2] ? match[2].split(',').map(c => c.trim()) : null;
       const values = match[3];
       
       if (!databases[currentDB].tables[tableName]) {
         return { output: `Table '${tableName}' does not exist`, error: true };
+      }
+      
+      const table = databases[currentDB].tables[tableName];
+      
+      // Validate column count if columns are specified
+      if (specifiedColumns && specifiedColumns.length !== values.split(',').length) {
+        return { output: 'Column count does not match value count', error: true };
       }
       
       setDatabases(prev => ({
@@ -375,37 +526,99 @@ const SQLPracticeTerminal = () => {
           }
         }
       }));
+      
       return { output: `1 row inserted into '${tableName}'`, error: false };
     }
 
     // SELECT
     if (cmd.startsWith('select ')) {
-      const match = originalCmd.match(/select\s+(.*?)\s+from\s+(\w+)/i);
+      const match = originalCmd.match(/select\s+(.*?)\s+from\s+(\w+)(?:\s+where\s+(.*))?/i);
       if (!match) {
-        return { output: 'Invalid SELECT syntax. Use: SELECT columns FROM table_name;', error: true };
+        return { output: 'Invalid SELECT syntax. Use: SELECT columns FROM table_name [WHERE condition];', error: true };
       }
-      const columns = match[1];
+      
+      const columns = match[1].trim();
       const tableName = match[2];
+      const whereClause = match[3];
       
       if (!databases[currentDB].tables[tableName]) {
         return { output: `Table '${tableName}' does not exist`, error: true };
       }
       
       const table = databases[currentDB].tables[tableName];
-      let result = `Table: ${tableName}\nColumns: ${table.columns}\n`;
       
-      if (table.rows.length === 0) {
-        result += 'No rows found';
-      } else {
-        result += `Rows:\n${table.rows.map((row, i) => `  ${i + 1}: (${row})`).join('\n')}`;
+      let result = formatTableData(table);
+      
+      if (whereClause) {
+        result += `\n(WHERE clause: ${whereClause} - filtering not fully implemented in this demo)`;
       }
       
       return { output: result, error: false };
     }
 
+    // UPDATE
+    if (cmd.startsWith('update ')) {
+      const match = originalCmd.match(/update\s+(\w+)\s+set\s+(.*?)(?:\s+where\s+(.*))?/i);
+      if (!match) {
+        return { output: 'Invalid UPDATE syntax. Use: UPDATE table_name SET column=value [WHERE condition];', error: true };
+      }
+      
+      const tableName = match[1];
+      const setClause = match[2];
+      const whereClause = match[3];
+      
+      if (!databases[currentDB].tables[tableName]) {
+        return { output: `Table '${tableName}' does not exist`, error: true };
+      }
+      
+      // In a real implementation, you'd parse and execute the SET and WHERE clauses
+      return { output: `UPDATE command recognized for table '${tableName}' (full implementation would modify rows)`, error: false };
+    }
+
+    // DELETE
+    if (cmd.startsWith('delete from ')) {
+      const match = originalCmd.match(/delete from\s+(\w+)(?:\s+where\s+(.*))?/i);
+      if (!match) {
+        return { output: 'Invalid DELETE syntax. Use: DELETE FROM table_name [WHERE condition];', error: true };
+      }
+      
+      const tableName = match[1];
+      const whereClause = match[2];
+      
+      if (!databases[currentDB].tables[tableName]) {
+        return { output: `Table '${tableName}' does not exist`, error: true };
+      }
+      
+      if (!whereClause) {
+        // Delete all rows
+        setDatabases(prev => ({
+          ...prev,
+          [currentDB]: {
+            ...prev[currentDB],
+            tables: {
+              ...prev[currentDB].tables,
+              [tableName]: {
+                ...prev[currentDB].tables[tableName],
+                rows: []
+              }
+            }
+          }
+        }));
+        
+        return { output: `All rows deleted from '${tableName}'`, error: false };
+      }
+      
+      return { output: `DELETE command recognized for table '${tableName}' (WHERE clause parsing not fully implemented)`, error: false };
+    }
+
     // DROP TABLE
     if (cmd.startsWith('drop table ')) {
-      const tableName = cmd.split('drop table ')[1].replace(';', '').trim();
+      const match = cmd.match(/drop table\s+(\w+)/);
+      if (!match) {
+        return { output: 'Invalid DROP TABLE syntax. Use: DROP TABLE table_name;', error: true };
+      }
+      
+      const tableName = match[1];
       if (!databases[currentDB].tables[tableName]) {
         return { output: `Table '${tableName}' does not exist`, error: true };
       }
@@ -421,12 +634,18 @@ const SQLPracticeTerminal = () => {
           }
         };
       });
+      
       return { output: `Table '${tableName}' dropped successfully`, error: false };
     }
 
     // DROP DATABASE
     if (cmd.startsWith('drop database ')) {
-      const dbName = cmd.split('drop database ')[1].replace(';', '').trim();
+      const match = cmd.match(/drop database\s+(\w+)/);
+      if (!match) {
+        return { output: 'Invalid DROP DATABASE syntax. Use: DROP DATABASE name;', error: true };
+      }
+      
+      const dbName = match[1];
       if (!databases[dbName]) {
         return { output: `Database '${dbName}' does not exist`, error: true };
       }
@@ -444,15 +663,13 @@ const SQLPracticeTerminal = () => {
       return { output: `Database '${dbName}' dropped successfully`, error: false };
     }
 
-
-
     // CLEAR
     if (cmd === 'clear' || cmd === 'clear;') {
       setHistory([]);
       return { output: '', error: false, clear: true };
     }
 
-    return { output: `Unknown command: ${originalCmd}. Check the Quick Commands panel for available commands.`, error: true };
+    return { output: `Unknown command: ${originalCmd}. Check available SQL commands.`, error: true };
   };
 
   const handleCommand = (command) => {
@@ -578,8 +795,8 @@ const SQLPracticeTerminal = () => {
         <div style={styles.terminal} ref={terminalRef} className="terminal">
           {history.length === 0 && (
             <div style={styles.welcomeText}>
-              <p>SQL Practice Terminal v1.0</p>
-              <p>Ready to execute SQL commands...</p>
+              <p>SQL Practice Terminal v2.0</p>
+              <p>Enhanced with improved command parsing and table formatting</p>
               <br />
             </div>
           )}
@@ -621,7 +838,6 @@ const SQLPracticeTerminal = () => {
         </div>
 
         <div style={styles.infoCards}>
-          
           <div style={styles.infoCard}>
             <h3 style={styles.cardTitle}>Current State</h3>
             <div style={styles.cardContent}>
