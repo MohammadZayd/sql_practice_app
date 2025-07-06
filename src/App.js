@@ -625,16 +625,6 @@ const SQLPracticeTerminal = () => {
         </div>
 
         <div style={styles.infoCards}>
-          <div style={styles.infoCard}>
-            <h3 style={styles.cardTitle}>Quick Commands</h3>
-            <div style={styles.cardContent}>
-              <span style={styles.codeExample}>CREATE DATABASE mystore;</span>
-              <span style={styles.codeExample}>USE mystore;</span>
-              <span style={styles.codeExample}>CREATE TABLE products (id INT, name VARCHAR(50));</span>
-              <span style={styles.codeExample}>INSERT INTO products VALUES (1, 'Laptop');</span>
-              <span style={styles.codeExample}>SELECT * FROM products;</span>
-            </div>
-          </div>
           
           <div style={styles.infoCard}>
             <h3 style={styles.cardTitle}>Current State</h3>
